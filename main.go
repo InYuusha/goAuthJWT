@@ -1,20 +1,18 @@
 package main
 
 import (
-	"./database"
+	"auth/db"
+	"auth/routes"
 
 	"github.com/gofiber/fiber/v2"
-	
 )
 
 func main() {
-	
-	database.Connect()
+	db.Connect()
+
 	app := fiber.New()
 
-	app.Get("/", func(c *fiber.Ctx) error {
-		return c.SendString("Hello There")
-	})
+	routes.Setup(app)
 
 	app.Listen(":8080")
 }
