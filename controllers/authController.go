@@ -54,11 +54,11 @@ func Login(c *fiber.Ctx) error {
 		})
 	}
 	//token
-	clams := jwt.NewWithClaims(jwt.SigningMethodHS256,jwt.StandardClaims{
+	claims := jwt.NewWithClaims(jwt.SigningMethodHS256,jwt.StandardClaims{
 		Issuer:strconv.Itoa(int(user.Id)),
 		ExpiresAt:time.Now().Add(time.Hour * 24).Unix(),
 	})
-	token,err:=clams.SignedString([]byte(secretKey))
+	token,err:=claims.SignedString([]byte(secretKey))
 	if err!=nil{
 		c.Status(fiber.StatusInternalServerError)
 		return c.JSON(fiber.Map{
@@ -69,10 +69,31 @@ func Login(c *fiber.Ctx) error {
 		Name:"jwt",
 		Value:token,
 		Expires: time.Now().Add(time.Hour * 24),
+		HTTPOnly: true,
 	}
 	c.Cookie(&cookie)
 	return c.JSON(fiber.Map{
 		"message":"Success",
 	})
 
+}
+func User (c *fiber.Ctx)error{
+	cookie:=c.Cookies("jwt")
+
+	token,err:=jwt.ParseWithClaims(cookie,&jwt.StandardClaims{},func(token *jwt.Token)(interface{},error){
+		return []byte(secretKey),nil
+	})
+	if err!=nil{
+		c.Status(fiber.StatusUnauthorized)
+		return c.JSON(fiber.Map{
+			"message":"unauthorized",
+		})
+	}
+	claims:=token.Claims.(*jwt.StandardClaims)
+
+	var user models.User
+
+	db.DB.Where("id =?",claims.Issuer).First(&user)
+	
+	return c.JSON(user)
 }
